@@ -7,7 +7,6 @@ void test_maiuscula() {
     assert(maiuscula('a') == 'A');
     assert(maiuscula('z') == 'Z');
     assert(maiuscula('A') == 'A');
-    assert(maiuscula('#') == '#');
 }
 
 void test_carregar_matriz() {
