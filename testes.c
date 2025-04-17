@@ -71,14 +71,14 @@ void testeMostrar() {
 }
 
 int main() {
-    test_maiuscula();
-    test_carregar_matriz();
-    test_copia_e_imprimeTabuleiro();
-    test_verificarRestricoes_sem_erros();
-    test_verificarRestricoes_com_erros();
-    test_mostrar();
+    testeMaiuscula();
+    testeCarregarMatriz();
+    testeCopiaImprimeTabuleiro();
+    testeVerificarRestricoes_sem_erros();
+    testeVerificarRestricoes_com_erros();
+    testeMostrar();
 
-    printf("✅ Todos os testes passaram com sucesso!\n");
+    printf("Todos os testes passaram com sucesso!\n");
     return 0;
 }
 
