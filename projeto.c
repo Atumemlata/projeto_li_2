@@ -17,6 +17,7 @@ int main() {
             while (getchar() != '\n');
             if (carregar_matriz(&jogo, "tabuleiro.txt")) {
                 mostrar(&jogo);
+                printMenu();
             }
         } else if (comando == 'b') {
             if (scanf("%d %d", &linha, &coluna) == 2) {
@@ -45,6 +46,8 @@ int main() {
             mostrar(&jogo);
         } else if (comando == 'v') {
             verificarRestricoes(&jogo);
+        } else if (comando == 'c') {
+            printMenu();
         } else {
             while (getchar() != '\n');
         }

@@ -28,5 +28,7 @@ char maiuscula(char c);
 void copiaTabuleiro(Jogo *jogo);
 void imprimeTabuleiro(Jogo *jogo);
 void verificarRestricoes(Jogo *jogo);
+void verificarCasa(Jogo *jogo, int x, int y, int visitado[MAX][MAX]);
+void printMenu();
 
 #endif
