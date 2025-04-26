@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "projeto.h"
-#include "projeto_funcoes.c"  
+
 
 void testeMaiuscula() {
     assert(maiuscula('a') == 'A');
@@ -31,18 +31,27 @@ void testeCopiaImprimeTabuleiro() {
     assert(j.atual[0][0] == 'X'); // Verifica se restaurou
     printf("testeCopiaImprimeTabuleiro passou.\n");
 }
-
 void testeVerificarRestricoes_sem_erros() {
     Jogo j;
-    carregar_matriz(&j, "tabuleiro.txt");
-
-    // Simula um estado válido
-    for (int i = 0; i < j.linhas; i++) {
-        for (int k = 0; k < j.colunas; k++) {
-            j.atual[i][k] = j.original[i][k];
+    
+    // Criar tabuleiro válido manualmente para teste
+    j.linhas = 3;
+    j.colunas = 3;
+    
+    // Tabuleiro válido (sem repetições ou regras quebradas)
+    char valido[3][3] = {
+        {'A', 'B', 'C'},
+        {'D', 'E', 'F'},
+        {'G', 'H', 'I'}
+    };
+    
+    for(int i = 0; i < 3; i++) {
+        for(int k = 0; k < 3; k++) {
+            j.original[i][k] = valido[i][k];
+            j.atual[i][k] = valido[i][k];
         }
     }
-
+    
     verificarRestricoes(&j);
     printf("testeVerificarRestricoes_sem_erros passou.\n");
 }

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "projeto.h"
-#include "projeto_funcoes.c"
 
 int main() {
     Jogo jogo;

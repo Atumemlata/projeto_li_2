@@ -27,5 +27,6 @@ void mostrar(Jogo *jogo);
 char maiuscula(char c);
 void copiaTabuleiro(Jogo *jogo);
 void imprimeTabuleiro(Jogo *jogo);
+void verificarRestricoes(Jogo *jogo);
 
 #endif
