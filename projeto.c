@@ -6,18 +6,19 @@ int main() {
     char comando;
     int linha, coluna;
 
+    // Exibe o menu assim que o jogo inicia
+    printMenu();
+
     while (1) {
         comando = getchar();
         while (comando == '\n') comando = getchar();
 
-
-        if (comando == 's') break;       // programa corre até pressionar a tecla s para sair 
+        if (comando == 's') break;       // sai ao pressionar 's'
 
         if (comando == 'l') {            // carrega o tabuleiro
             while (getchar() != '\n');
             if (carregar_matriz(&jogo, "tabuleiro.txt")) {
                 mostrar(&jogo);
-                printMenu();
             }
         } else if (comando == 'b') {
             if (scanf("%d %d", &linha, &coluna) == 2) {
@@ -40,7 +41,7 @@ int main() {
                 }
             } else {
                 while (getchar() != '\n');
-            }  // limpa tudo o que não interessa ler
+            }
         } else if (comando == 'd') {
             imprimeTabuleiro(&jogo);
             mostrar(&jogo);
