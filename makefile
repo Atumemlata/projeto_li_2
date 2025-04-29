@@ -19,9 +19,7 @@ jogo: $(MAIN_OBJ) $(OBJ)
 testar: CFLAGS += $(COV_FLAGS)
 testar: LDFLAGS += $(COV_FLAGS) -lgcov
 testar: clean testes
-	@echo "\nExecutando testes..."
 	@./testes
-	@echo "\nAnalisando cobertura..."
 	@gcov -r $(SRC) $(TEST_SRC)
 
 testes: $(TEST_OBJ) $(OBJ)
