@@ -61,7 +61,11 @@ int main() {
                 while (getchar() != '\n');
                 char filename[100];
                 printf("Nome do arquivo para salvar: ");
-                scanf("%99s", filename);
+                if (scanf("%99s", filename) != 1) {
+                    printf("Erro ao ler o nome do ficheiro.\n");
+                    break;
+                }
+                
                 salvar_jogo(&jogo, filename);
                 while (getchar() != '\n');
                 break;
