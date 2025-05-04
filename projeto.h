@@ -30,5 +30,6 @@ void printMenu(void);
 void salvar_jogo(Jogo *jogo, const char *filename);
 int dar_dica(Jogo *jogo, int *x, int *y);
 void resolver_jogo(Jogo *jogo);
+void limparJogo(Jogo *jogo);
 
 #endif

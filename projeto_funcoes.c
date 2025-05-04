@@ -6,6 +6,7 @@
 
 int carregar_matriz(Jogo *jogo, const char *filename) {
     // Limpa histórico existente de forma segura
+    jogo->historico = NULL;
     while (jogo->historico != NULL) {
         Estado *temp = jogo->historico;
         jogo->historico = jogo->historico->prox;
@@ -65,6 +66,18 @@ int carregar_matriz(Jogo *jogo, const char *filename) {
     fclose(file);
     return 1;
 }
+
+void limparJogo(Jogo *jogo) {
+    Estado *e = jogo->historico;
+    while (e) {
+        Estado *temp = e->prox;
+        free(e);
+        e = temp;
+    }
+    jogo->historico = NULL;
+}
+
+
 
 void printMenu() {
     printf("\n--- Menu de Comandos ---\n");
