@@ -1,28 +1,63 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include "projeto.h"
 
-
 int carregar_matriz(Jogo *jogo, const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (!file) return 0;
+    // Limpa histórico existente de forma segura
+    while (jogo->historico != NULL) {
+        Estado *temp = jogo->historico;
+        jogo->historico = jogo->historico->prox;
+        free(temp);
+    }
 
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        fprintf(stderr, "Erro: Não foi possível abrir o arquivo %s\n", filename);
+        return 0;
+    }
+
+    // Reinicia as dimensões
+    jogo->linhas = 0;
+    jogo->colunas = 0;
+
+    // Lê dimensões do tabuleiro
     if (fscanf(file, "%d %d", &jogo->linhas, &jogo->colunas) != 2) {
         fclose(file);
+        fprintf(stderr, "Erro: Formato inválido no arquivo (linhas/colunas)\n");
         return 0;
     }
 
-    if (jogo->linhas > MAX || jogo->colunas > MAX) {
+    // Valida dimensões máximas
+    if (jogo->linhas <= 0 || jogo->colunas <= 0 || 
+        jogo->linhas > MAX || jogo->colunas > MAX) {
         fclose(file);
+        fprintf(stderr, "Erro: Dimensões inválidas (%d x %d)\n", 
+               jogo->linhas, jogo->colunas);
         return 0;
     }
 
+    // Lê o tabuleiro caractere por caractere
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
             if (fscanf(file, " %c", &jogo->original[i][j]) != 1) {
                 fclose(file);
+                fprintf(stderr, "Erro: Leitura do tabuleiro incompleta\n");
                 return 0;
             }
+            
+            // Valida caractere
+            if (jogo->original[i][j] != ' ' && 
+               !isalpha(jogo->original[i][j]) && 
+               jogo->original[i][j] != '#') {
+                fclose(file);
+                fprintf(stderr, "Erro: Caractere inválido '%c' na posição (%d,%d)\n",
+                      jogo->original[i][j], i, j);
+                return 0;
+            }
+            
+            // Inicializa tabuleiro atual
             jogo->atual[i][j] = jogo->original[i][j];
         }
     }
@@ -34,16 +69,20 @@ int carregar_matriz(Jogo *jogo, const char *filename) {
 void printMenu() {
     printf("\n--- Menu de Comandos ---\n");
     printf("s : Sair do jogo\n");
-    printf("l : Carregar o tabuleiro de um arquivo\n");
-    printf("b : Pintar uma casa (linha coluna)\n");
-    printf("r : Riscar uma casa (linha coluna)\n");
-    printf("d : Desfazer a ultima jogada\n");
-    printf("v : Verificar restricoes do tabuleiro\n");
-    printf("c : Mostrar o menu novamente\n");
+    printf("l : Carregar tabuleiro\n");
+    printf("b : Pintar casa (linha coluna)\n");
+    printf("r : Riscar casa (linha coluna)\n");
+    printf("d : Desfazer jogada\n");
+    printf("v : Verificar restricoes\n");
+    printf("c : Mostrar menu\n");
+    printf("g : Gravar jogo em arquivo\n");
+    printf("a : Dar dica\n");
+    printf("R : Resolver jogo\n");
     printf("--------------------------\n");
 }
 
 void mostrar(Jogo *jogo) {
+    printf("\n");
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
             printf("%c ", jogo->atual[i][j]);
@@ -58,8 +97,11 @@ char maiuscula(char c) {
 }
 
 void copiaTabuleiro(Jogo *jogo) {
-    Estado *novo = malloc(sizeof(Estado)); // Aloca memória para um novo estado
-    if (!novo) return; // Verifica se a alocação foi bem-sucedida
+    Estado *novo = malloc(sizeof(Estado));
+    if (!novo) {
+        printf("Erro ao alocar memoria!\n");
+        return;
+    }
 
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
@@ -71,76 +113,74 @@ void copiaTabuleiro(Jogo *jogo) {
 }
 
 void imprimeTabuleiro(Jogo *jogo) {
-    if (jogo->historico == NULL) return;
+    if (jogo->historico == NULL) {
+        printf("Nenhum estado anterior para restaurar!\n");
+        return;
+    }
 
     Estado *topo = jogo->historico;
+    
+    // Restaura o estado anterior
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
             jogo->atual[i][j] = topo->estado[i][j];
         }
     }
+    
+    // Atualiza o histórico
     jogo->historico = topo->prox;
     free(topo);
 }
 
 void verificarCasa(Jogo *jogo, int x, int y, int visitado[MAX][MAX]) {
-    if (x < 0 || x >= jogo->linhas || y < 0 || y >= jogo->colunas) return; // Condições de fronteira
-    if (!isupper(jogo->atual[x][y])) return; // Só visita casas brancas (letras maiúsculas)
-    if (visitado[x][y]) return; // Se já foi visitado, retorna
+    if (x < 0 || x >= jogo->linhas) return;
+    if (y < 0 || y >= jogo->colunas) return;
+    if (visitado[x][y]) return;
+    if (!isupper(jogo->atual[x][y])) return;
 
-    visitado[x][y] = 1; // Marca a casa como visitada
+    visitado[x][y] = 1;
 
-    // verificarCasa para as 4 direções ortogonais
-    verificarCasa(jogo, x + 1, y, visitado); // baixo
-    verificarCasa(jogo, x - 1, y, visitado); // cima
-    verificarCasa(jogo, x, y + 1, visitado); // direita
-    verificarCasa(jogo, x, y - 1, visitado); // esquerda
+    verificarCasa(jogo, x+1, y, visitado);
+    verificarCasa(jogo, x-1, y, visitado);
+    verificarCasa(jogo, x, y+1, visitado);
+    verificarCasa(jogo, x, y-1, visitado);
 }
 
 void verificarRestricoes(Jogo *jogo) {
     int violacoes = 0;
 
-    // Verifica as linhas (símbolos repetidos)
+    // Verificar linhas
     for (int i = 0; i < jogo->linhas; i++) {
-        char simbolos[jogo->colunas];
         for (int j = 0; j < jogo->colunas; j++) {
-            simbolos[j] = jogo->atual[i][j];
-        }
-
-        for (int j = 0; j < jogo->colunas; j++) {
-            for (int k = j + 1; k < jogo->colunas; k++) {
-                if (simbolos[j] == simbolos[k] && simbolos[j] != '#' && simbolos[j] != ' ') {
+            for (int k = j+1; k < jogo->colunas; k++) {
+                if (jogo->atual[i][j] == jogo->atual[i][k] && 
+                    jogo->atual[i][j] != '#' && 
+                    jogo->atual[i][j] != ' ') {
                     violacoes++;
-                    printf("Violacao: Simbolo '%c' repete na linha %d\n", simbolos[j], i);
-                    break;
+                    printf("Violacao linha %d: %c repetido\n", i, jogo->atual[i][j]);
                 }
             }
         }
     }
 
-    // Verifica as colunas (símbolos repetidos)
+    // Verificar colunas
     for (int j = 0; j < jogo->colunas; j++) {
-        char simbolos[jogo->linhas];
         for (int i = 0; i < jogo->linhas; i++) {
-            simbolos[i] = jogo->atual[i][j];
-        }
-
-        for (int i = 0; i < jogo->linhas; i++) {
-            for (int k = i + 1; k < jogo->linhas; k++) {
-                if (simbolos[i] == simbolos[k] && simbolos[i] != '#' && simbolos[i] != ' ') {
+            for (int k = i+1; k < jogo->linhas; k++) {
+                if (jogo->atual[i][j] == jogo->atual[k][j] && 
+                    jogo->atual[i][j] != '#' && 
+                    jogo->atual[i][j] != ' ') {
                     violacoes++;
-                    printf("Violacao: Simbolo '%c' repete na coluna %d\n", simbolos[i], j);
-                    break;
+                    printf("Violacao coluna %d: %c repetido\n", j, jogo->atual[i][j]);
                 }
             }
         }
     }
 
-// Verificar se todas as casas brancas estão conectadas
+    // Verificar conexão
     int visitado[MAX][MAX] = {0};
     int startX = -1, startY = -1;
 
-    // Encontra a primeira casa branca (letra maiúscula)
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
             if (isupper(jogo->atual[i][j])) {
@@ -153,45 +193,85 @@ void verificarRestricoes(Jogo *jogo) {
     }
 
     if (startX != -1) {
-        // Se encontramos uma casa branca, começamos o verificarCasa a partir dela
         verificarCasa(jogo, startX, startY, visitado);
 
-        // Verifica se todas as casas brancas foram visitadas
         for (int i = 0; i < jogo->linhas; i++) {
             for (int j = 0; j < jogo->colunas; j++) {
                 if (isupper(jogo->atual[i][j]) && !visitado[i][j]) {
-                    printf("Violacao: Casa branca em (%d, %d) nao esta conectada!\n", i, j);
                     violacoes++;
+                    printf("Casa (%d,%d) desconectada\n", i, j);
                 }
             }
         }
-    } else {
-        printf("Nenhuma casa branca encontrada no tabuleiro.\n");
     }
-    // Verifica dois '#' seguidos horizontalmente
+
+    // Verificar '#' consecutivos
     for (int i = 0; i < jogo->linhas; i++) {
-        for (int j = 0; j < jogo->colunas - 1; j++) {
-            if (jogo->atual[i][j] == '#' && jogo->atual[i][j + 1] == '#') {
+        for (int j = 0; j < jogo->colunas-1; j++) {
+            if (jogo->atual[i][j] == '#' && jogo->atual[i][j+1] == '#') {
                 violacoes++;
-                printf("Violacao: Dois '#' consecutivos na linha %d entre colunas %d e %d\n", i, j, j + 1);
+                printf("Dois '#' consecutivos em (%d,%d)-(%d,%d)\n", i, j, i, j+1);
             }
         }
     }
 
-    // Verifica dois '#' seguidos verticalmente
     for (int j = 0; j < jogo->colunas; j++) {
-        for (int i = 0; i < jogo->linhas - 1; i++) {
-            if (jogo->atual[i][j] == '#' && jogo->atual[i + 1][j] == '#') {
+        for (int i = 0; i < jogo->linhas-1; i++) {
+            if (jogo->atual[i][j] == '#' && jogo->atual[i+1][j] == '#') {
                 violacoes++;
-                printf("Violacao: Dois '#' consecutivos na coluna %d entre linhas %d e %d\n", j, i, i + 1);
+                printf("Dois '#' consecutivos em (%d,%d)-(%d,%d)\n", i, j, i+1, j);
             }
         }
     }
 
-    // Mensagem final
-    if (violacoes == 0) {
-        printf("Nenhuma violacao encontrada.\n");
-    } else {
-        printf("Foram encontradas %d violacoes das restricoes do tabuleiro.\n", violacoes);
+    printf(violacoes ? "\nTotal violacoes: %d\n" : "\nTabuleiro valido!\n", violacoes);
+}
+
+void salvar_jogo(Jogo *jogo, const char *filename) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        printf("Erro ao criar arquivo!\n");
+        return;
     }
+
+    fprintf(file, "%d %d\n", jogo->linhas, jogo->colunas);
+    for (int i = 0; i < jogo->linhas; i++) {
+        for (int j = 0; j < jogo->colunas; j++) {
+            fprintf(file, "%c ", jogo->atual[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+    fclose(file);
+    printf("Tabuleiro salvo em %s\n", filename);
+}
+
+int dar_dica(Jogo *jogo, int *x, int *y) {
+    for (int i = 0; i < jogo->linhas; i++) {
+        for (int j = 0; j < jogo->colunas; j++) {
+            if (jogo->original[i][j] != ' ' && 
+                jogo->atual[i][j] != maiuscula(jogo->original[i][j])) {
+                *x = i;
+                *y = j;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+void resolver_jogo(Jogo *jogo) {
+    if (jogo->linhas == 0) {
+        printf("Carregue um tabuleiro primeiro!\n");
+        return;
+    }
+
+    copiaTabuleiro(jogo);
+    for (int i = 0; i < jogo->linhas; i++) {
+        for (int j = 0; j < jogo->colunas; j++) {
+            if (jogo->original[i][j] != ' ') {
+                jogo->atual[i][j] = maiuscula(jogo->original[i][j]);
+            }
+        }
+    }
+    printf("Jogo resolvido!\n");
 }

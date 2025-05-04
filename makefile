@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -O1 -fsanitize=address -fno-omit-frame-pointer -g
+CFLAGS = -Wall -Wextra -pedantic -O1 -fsanitize=address -fno-omit-frame-pointer -g 
 LDFLAGS = -fsanitize=address -fno-omit-frame-pointer
 COV_FLAGS = -fprofile-arcs -ftest-coverage
 SRC = projeto_funcoes.c
@@ -17,13 +17,13 @@ jogo: $(MAIN_OBJ) $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 testar: CFLAGS += $(COV_FLAGS)
-testar: LDFLAGS += $(COV_FLAGS) -lgcov
+testar: LDFLAGS += $(COV_FLAGS) -lgcov -lcunit
 testar: clean testes
 	@./testes
 	@gcov -r $(SRC) $(TEST_SRC)
 
 testes: $(TEST_OBJ) $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -lcunit
 
 %.o: %.c projeto.h
 	$(CC) $(CFLAGS) -c $< -o $@
