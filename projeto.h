@@ -16,7 +16,7 @@ typedef struct {
     int colunas;
     char original[MAX][MAX];
     char atual[MAX][MAX];
-    Estado *historico; // Inicializado automaticamente com {0}
+    Estado *historico; 
 } Jogo;
 
 int carregar_matriz(Jogo *jogo, const char *filename);

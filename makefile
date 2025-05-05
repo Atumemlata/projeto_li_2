@@ -29,6 +29,6 @@ testes: $(TEST_OBJ) $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf jogo testes *.o *.gcno *.gcda *.gcov
+	rm -rf jogo testes *.o *.gcno *.gcda *.gcov saida.txt
 
 coverage: testar
