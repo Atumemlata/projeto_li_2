@@ -57,15 +57,16 @@ int carregar_matriz(Jogo *jogo, const char *filename) {
                       jogo->original[i][j], i, j);
                 return 0;
             }
-            
-            // Inicializa tabuleiro atual
-            jogo->atual[i][j] = jogo->original[i][j];
+
+            // Inicializa o tabuleiro atual com letras minúsculas
+            jogo->atual[i][j] = tolower(jogo->original[i][j]);
         }
     }
 
     fclose(file);
     return 1;
 }
+
 
 void limparJogo(Jogo *jogo) {
     Estado *e = jogo->historico;
@@ -257,133 +258,110 @@ void salvar_jogo(Jogo *jogo, const char *filename) {
 }
 //FUNCOES PARA RESOLVER 
 
-// Verifica se há células "preenchidas" ('#') adjacentes.
-int tem_adjacente(Jogo *g) {
-    for (int i = 0; i < g->linhas; i++) {
-        for (int j = 0; j < g->colunas; j++) {
-            if (g->atual[i][j] != '#')
-                continue;
-            if ((i > 0 && g->atual[i-1][j] == '#') ||
-                (i < g->linhas - 1 && g->atual[i+1][j] == '#') ||
-                (j > 0 && g->atual[i][j-1] == '#') ||
-                (j < g->colunas - 1 && g->atual[i][j+1] == '#'))
-                return 1;
-        }
-    }
+// ————— Funções de apoio ao “ajuda” —————
+
+// Deve riscar casa (x,y) se houver um espaço na mesma linha/coluna
+
+static int precisaRascar(Jogo *j, int x, int y) {
+    char c = j->atual[x][y];
+    if (!islower(c)) return 0;
+    char C = toupper(c);
+    for (int i = 0; i < j->linhas; i++)
+        if (i!=x && j->atual[i][y] == C) return 1;
+    for (int k = 0; k < j->colunas; k++)
+        if (k!=y && j->atual[x][k] == C) return 1;
     return 0;
 }
 
-// Procura o primeiro conflito encontrado.
-// letras iguais na mesma linha ou coluna (exceto '#')
-// ou duas coordenadas '#' adjacentes.
-// Se encontrar, retorna 1 e preenche (x1, y1) e (x2, y2) com as coordenadas do conflito.
-int encontra_violacoes(Jogo *g, int *x1, int *y1, int *x2, int *y2) {
-    // Verifica duplicadas (mesma letra) na mesma linha e coluna
-    for (int i = 0; i < g->linhas; i++) {
-        for (int j = 0; j < g->colunas; j++) {
-            if (g->atual[i][j] == '#')
-                continue;
-            // Verifica na mesma linha (apenas à direita)
-            for (int k = j + 1; k < g->colunas; k++) {
-                if (g->atual[i][k] == g->atual[i][j]) {
-                    *x1 = i; *y1 = j;
-                    *x2 = i; *y2 = k;
-                    return 1;
-                }
-            }
-            // Verifica na mesma coluna (apenas abaixo)
-            for (int k = i + 1; k < g->linhas; k++) {
-                if (g->atual[k][j] == g->atual[i][j]) {
-                    *x1 = i; *y1 = j;
-                    *x2 = k; *y2 = j;
-                    return 1;
-                }
-            }
+// 2) testa se riscar (x,y) isolaria alguma célula branca (maiúscula)
+static int isolaBrancos(Jogo *j, int x, int y) {
+    int visitado[MAX][MAX] = {0};
+    char salv = j->atual[x][y];
+    j->atual[x][y] = '#';
+    // procura primeira maiúscula
+    int sx=-1, sy=-1;
+    for (int i=0;i<j->linhas && sx<0;i++)
+      for (int k=0;k<j->colunas;k++)
+        if (isupper(j->atual[i][k])) { sx=i; sy=k; break; }
+    if (sx<0) { j->atual[x][y]=salv; return 0; }
+    verificarCasa(j, sx, sy, visitado);
+    int descon = 0;
+    for (int i=0;i<j->linhas;i++)
+      for (int k=0;k<j->colunas;k++)
+        if (isupper(j->atual[i][k]) && !visitado[i][k]) { descon=1; break; }
+    j->atual[x][y] = salv;
+    return descon;
+}
+
+// 3) a função de “ajuda” devolve 1 se alterou algo, 0 caso contrário
+int ajudar(Jogo *j) {
+    char novo[MAX][MAX];
+    int mudou = 0;
+    memcpy(novo, j->atual, sizeof(novo));
+
+    // (a) riscar minúsculas repetidas
+    for (int i = 0; i < j->linhas; i++) {
+      for (int k = 0; k < j->colunas; k++) {
+        if (precisaRascar(j, i, k) && novo[i][k] != '#') {
+          novo[i][k] = '#';
+          mudou = 1;
         }
+      }
     }
-    // Verifica coordenadas '#' adjacentes:
-    // So se vê cima e esquerda para nao se repetir
-    for (int i = 0; i < g->linhas; i++) {
-        for (int j = 0; j < g->colunas; j++) {
-            if (g->atual[i][j] == '#') {
-                if (i > 0 && g->atual[i-1][j] == '#') {
-                    *x1 = i; *y1 = j;
-                    *x2 = i - 1; *y2 = j;
-                    return 1;
-                }
-                if (j > 0 && g->atual[i][j-1] == '#') {
-                    *x1 = i; *y1 = j;
-                    *x2 = i; *y2 = j - 1;
-                    return 1;
-                }
-            }
+
+    // (b) pintar vizinhas de riscado em maiúscula
+    for (int i = 0; i < j->linhas; i++) {
+      for (int k = 0; k < j->colunas; k++) {
+        if (j->atual[i][k] == '#') {
+          // revela em maiúscula a original vizinha
+          if (i > 0 && novo[i-1][k] != toupper(j->original[i-1][k])) {
+            novo[i-1][k] = toupper(j->original[i-1][k]);
+            mudou = 1;
+          }
+          if (i < j->linhas - 1 && novo[i+1][k] != toupper(j->original[i+1][k])) {
+            novo[i+1][k] = toupper(j->original[i+1][k]);
+            mudou = 1;
+          }
+          if (k > 0 && novo[i][k-1] != toupper(j->original[i][k-1])) {
+            novo[i][k-1] = toupper(j->original[i][k-1]);
+            mudou = 1;
+          }
+          if (k < j->colunas - 1 && novo[i][k+1] != toupper(j->original[i][k+1])) {
+            novo[i][k+1] = toupper(j->original[i][k+1]);
+            mudou = 1;
+          }
         }
+      }
     }
-    return 0;
-}
 
-// Backtracking recursivo: tenta resolver os conflitos do tabuleiro.
-// Se conseguir resolver (ou seja, não há conflitos) retorna 1; senão, retorna 0.
-int resolve(Jogo *g) {
-    int x1, y1, x2, y2;
-    
-    // Se não há conflito, o tabuleiro está resolvido.
-    if (!encontra_violacoes(g, &x1, &y1, &x2, &y2))
-        return 1;
-    
-    // Salva os valores originais
-    char cel1 = g->atual[x1][y1];
-    char cel2 = g->atual[x2][y2];
-    
-    // Tenta remover (definindo como '#') a primeira celula em conflito
-    g->atual[x1][y1] = '#';
-    if (!tem_adjacente(g) && resolve(g))
-        return 1;
-    g->atual[x1][y1] = cel1;  // desfaz a alteração
-    
-    // Tenta remover a segunda célula
-    g->atual[x2][y2] = '#';
-    if (!tem_adjacente(g) && resolve(g))
-        return 1;
-    g->atual[x2][y2] = cel2;
-    
-    return 0;
-}
-
-// Sugere uma dica: qual a célula a remover a seguir.
-// Se encontrar uma dica, retorna 1 e define (*x, *y) com as coordenadas.
-int dar_dica(Jogo *g, int *x, int *y) {
-    int x1, y1, x2, y2;
-    
-    if (!encontra_violacoes(g, &x1, &y1, &x2, &y2))
-        return 0;
-    
-    // Testa a remoção da primeira célula num tabuleiro de cópia
-    Jogo copia = *g;
-    copia.atual[x1][y1] = '#';
-    if (!tem_adjacente(&copia) && resolve(&copia)) {
-        *x = x1; *y = y1;
-        return 1;
+    // (c) pintar aquelas minúsculas que isolariam brancos
+    for (int i = 0; i < j->linhas; i++) {
+      for (int k = 0; k < j->colunas; k++) {
+        if (islower(novo[i][k]) && isolaBrancos(j, i, k)) {
+          novo[i][k] = toupper(j->original[i][k]);
+          mudou = 1;
+        }
+      }
     }
-    
-    // Caso contrário, sugere a segunda célula
-    *x = x2; *y = y2;
-    return 1;
+
+    if (mudou) memcpy(j->atual, novo, sizeof(novo));
+    return mudou;
 }
 
-// Função principal que aplica as dicas até que o jogo seja resolvido.
-// Após resolver, converte todas as letras para maiúsculas e exibe o tabuleiro.
+
 void resolve_jogo(Jogo *g) {
-    int x, y;
-    while (dar_dica(g, &x, &y)) {
-        copiaTabuleiro(g);      // Assume que essa função faz uma cópia do tabuleiro (para histórico ou visual)
-        g->atual[x][y] = '#';     // Remove a célula sugerida pela dica
+    if (g->linhas == 0) {
+        printf("Carregue um tabuleiro primeiro!\n");
+        return;
     }
-    // Converte todas as células para maiúsculas
-    for (int i = 0; i < g->linhas; i++) {
-        for (int j = 0; j < g->colunas; j++) {
-            g->atual[i][j] = maiuscula(g->atual[i][j]);
-        }
-    }
-    mostrar(g);  // Exibe o tabuleiro final
+
+    int mudou;
+    do {
+        copiaTabuleiro(g);  // Salva o estado antes de qualquer alteração
+        mudou = ajudar(g);
+    } while (mudou);
+
+    mostrar(g);
 }
+
+

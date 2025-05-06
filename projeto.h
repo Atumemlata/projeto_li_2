@@ -31,5 +31,6 @@ void salvar_jogo(Jogo *jogo, const char *filename);
 int dar_dica(Jogo *jogo, int *x, int *y);
 void resolve_jogo(Jogo *jogo);
 void limparJogo(Jogo *jogo);
+int ajudar(Jogo *jogo);
 
 #endif

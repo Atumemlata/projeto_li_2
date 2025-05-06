@@ -70,29 +70,50 @@ int main() {
                 while (getchar() != '\n');
                 break;
 
-            case 'a': // Dica
-                if (jogo.linhas == 0) {
+            case 'a':
+                if (jogo.linhas==0) {
                     printf("Carregue um tabuleiro primeiro!\n");
                 } else {
-                    int x, y;
-                    if (dar_dica(&jogo, &x, &y)) {
-                        printf("Dica: Risque a posicao (%d, %d)\n", x, y);
-                    } else {
-                        printf("Nenhuma dica disponivel!\n");
-                    }
+                    copiaTabuleiro(&jogo);
+                    if (!ajudar(&jogo)) 
+                        printf("Nada mais a inferir.\n");
+                    mostrar(&jogo);
                 }
-                while (getchar() != '\n');
+                while (getchar()!='\n');
                 break;
-
+            
+            case 'A':
+                if (jogo.linhas==0) {
+                    printf("Carregue um tabuleiro primeiro!\n");
+                } else {
+                    while (1) {
+                        copiaTabuleiro(&jogo);
+                        if (!ajudar(&jogo))
+                            break;
+                    }
+                    mostrar(&jogo);
+                }
+                while (getchar()!='\n');
+                break;
+            
+            
+            
+            
             case 'R': // Resolver
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
+                    // limpa apenas o '\n' da linha do comando
+                    if (getchar() != '\n') {}
                 } else {
+                    // limpa o '\n' que sobrou no buffer antes de resolver
+                    if (getchar() != '\n') {}
+            
                     resolve_jogo(&jogo);
-                    mostrar(&jogo);
+                    // não chames outro getchar aqui! deixamos o main loop continuar
                 }
-                while (getchar() != '\n');
                 break;
+            
+            
 
             default:
                 printf("Comando invalido!\n");

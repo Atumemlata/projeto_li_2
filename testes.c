@@ -115,17 +115,6 @@ void test_resolver_jogo() {
     limparJogo(&j);
 }
 
-void test_dar_dica() {
-    Jogo j = {0};
-    carregar_matriz(&j, "tabuleiro.txt");
-
-    int x = -1, y = -1;
-    int resultado = dar_dica(&j, &x, &y);
-
-    CU_ASSERT(resultado == 0 || resultado == 1);
-
-    limparJogo(&j);
-}
 
 void test_printMenu() {
     printMenu();
@@ -147,7 +136,6 @@ int main() {
     CU_add_test(suite, "limparJogo com histórico", test_limparJogo_com_historico);
     CU_add_test(suite, "salvar_jogo()", test_salvar_jogo);
     CU_add_test(suite, "resolver_jogo()", test_resolver_jogo);
-    CU_add_test(suite, "dar_dica()", test_dar_dica);
     CU_add_test(suite, "printMenu()", test_printMenu);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
