@@ -274,11 +274,11 @@ int tem_adjacente(Jogo *g) {
 }
 
 // Procura o primeiro conflito encontrado.
-// Conflito é: letras iguais na mesma linha ou coluna (exceto '#')
-// ou duas células '#' adjacentes.
+// letras iguais na mesma linha ou coluna (exceto '#')
+// ou duas coordenadas '#' adjacentes.
 // Se encontrar, retorna 1 e preenche (x1, y1) e (x2, y2) com as coordenadas do conflito.
 int encontra_violacoes(Jogo *g, int *x1, int *y1, int *x2, int *y2) {
-    // Verifica duplicatas (mesma letra) na mesma linha e coluna
+    // Verifica duplicadas (mesma letra) na mesma linha e coluna
     for (int i = 0; i < g->linhas; i++) {
         for (int j = 0; j < g->colunas; j++) {
             if (g->atual[i][j] == '#')
@@ -301,8 +301,8 @@ int encontra_violacoes(Jogo *g, int *x1, int *y1, int *x2, int *y2) {
             }
         }
     }
-    // Verifica células '#' adjacentes:
-    // Checamos apenas "acima" e "à esquerda" para evitar repetição.
+    // Verifica coordenadas '#' adjacentes:
+    // So se vê cima e esquerda para nao se repetir
     for (int i = 0; i < g->linhas; i++) {
         for (int j = 0; j < g->colunas; j++) {
             if (g->atual[i][j] == '#') {
@@ -335,7 +335,7 @@ int resolve(Jogo *g) {
     char cel1 = g->atual[x1][y1];
     char cel2 = g->atual[x2][y2];
     
-    // Tenta remover (definindo como '#') a primeira célula em conflito
+    // Tenta remover (definindo como '#') a primeira celula em conflito
     g->atual[x1][y1] = '#';
     if (!tem_adjacente(g) && resolve(g))
         return 1;
