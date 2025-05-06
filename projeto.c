@@ -2,7 +2,7 @@
 #include "projeto.h"
 
 int main() {
-    Jogo jogo = {0}; // Inicializa todas as variáveis para 0/NULL
+    Jogo jogo = {0}; 
     char comando;
     int linha, coluna;
 
@@ -10,7 +10,7 @@ int main() {
 
     while (1) {
         comando = getchar();
-        while (comando == '\n' || comando == ' ') comando = getchar(); // Ignora newlines e espaços
+        while (comando == '\n' || comando == ' ') comando = getchar();
 
         if (comando == 's') break;
 
@@ -76,7 +76,7 @@ int main() {
                 } else {
                     int x, y;
                     if (dar_dica(&jogo, &x, &y)) {
-                        printf("Dica: Tente a posicao (%d, %d)\n", x, y);
+                        printf("Dica: Risque a posicao (%d, %d)\n", x, y);
                     } else {
                         printf("Nenhuma dica disponivel!\n");
                     }
@@ -88,7 +88,7 @@ int main() {
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
                 } else {
-                    resolver_jogo(&jogo);
+                    resolve_jogo(&jogo);
                     mostrar(&jogo);
                 }
                 while (getchar() != '\n');

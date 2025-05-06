@@ -146,13 +146,10 @@ void imprimeTabuleiro(Jogo *jogo) {
 }
 
 void verificarCasa(Jogo *jogo, int x, int y, int visitado[MAX][MAX]) {
-    if (x < 0 || x >= jogo->linhas) return;
-    if (y < 0 || y >= jogo->colunas) return;
-    if (visitado[x][y]) return;
-    if (!isupper(jogo->atual[x][y])) return;
+    if (x < 0 || x >= jogo->linhas || y < 0 || y >= jogo->colunas) return;
+    if (visitado[x][y] || jogo->atual[x][y] == '#') return;
 
     visitado[x][y] = 1;
-
     verificarCasa(jogo, x+1, y, visitado);
     verificarCasa(jogo, x-1, y, visitado);
     verificarCasa(jogo, x, y+1, visitado);
@@ -210,7 +207,7 @@ void verificarRestricoes(Jogo *jogo) {
 
         for (int i = 0; i < jogo->linhas; i++) {
             for (int j = 0; j < jogo->colunas; j++) {
-                if (isupper(jogo->atual[i][j]) && !visitado[i][j]) {
+                if (islower(jogo->atual[i][j]) && !visitado[i][j]) {
                     violacoes++;
                     printf("Casa (%d,%d) desconectada\n", i, j);
                 }
@@ -240,6 +237,7 @@ void verificarRestricoes(Jogo *jogo) {
     printf(violacoes ? "\nTotal violacoes: %d\n" : "\nTabuleiro valido!\n", violacoes);
 }
 
+//FUNCAO PARA GRAVAR O JOGO(COMANDO g)
 void salvar_jogo(Jogo *jogo, const char *filename) {
     FILE *file = fopen(filename, "w");
     if (!file) {
@@ -257,34 +255,135 @@ void salvar_jogo(Jogo *jogo, const char *filename) {
     fclose(file);
     printf("Tabuleiro salvo em %s\n", filename);
 }
+//FUNCOES PARA RESOLVER 
 
-int dar_dica(Jogo *jogo, int *x, int *y) {
-    for (int i = 0; i < jogo->linhas; i++) {
-        for (int j = 0; j < jogo->colunas; j++) {
-            if (jogo->original[i][j] != ' ' && 
-                jogo->atual[i][j] != maiuscula(jogo->original[i][j])) {
-                *x = i;
-                *y = j;
+// Verifica se há células "preenchidas" ('#') adjacentes.
+int tem_adjacente(Jogo *g) {
+    for (int i = 0; i < g->linhas; i++) {
+        for (int j = 0; j < g->colunas; j++) {
+            if (g->atual[i][j] != '#')
+                continue;
+            if ((i > 0 && g->atual[i-1][j] == '#') ||
+                (i < g->linhas - 1 && g->atual[i+1][j] == '#') ||
+                (j > 0 && g->atual[i][j-1] == '#') ||
+                (j < g->colunas - 1 && g->atual[i][j+1] == '#'))
                 return 1;
+        }
+    }
+    return 0;
+}
+
+// Procura o primeiro conflito encontrado.
+// Conflito é: letras iguais na mesma linha ou coluna (exceto '#')
+// ou duas células '#' adjacentes.
+// Se encontrar, retorna 1 e preenche (x1, y1) e (x2, y2) com as coordenadas do conflito.
+int encontra_violacoes(Jogo *g, int *x1, int *y1, int *x2, int *y2) {
+    // Verifica duplicatas (mesma letra) na mesma linha e coluna
+    for (int i = 0; i < g->linhas; i++) {
+        for (int j = 0; j < g->colunas; j++) {
+            if (g->atual[i][j] == '#')
+                continue;
+            // Verifica na mesma linha (apenas à direita)
+            for (int k = j + 1; k < g->colunas; k++) {
+                if (g->atual[i][k] == g->atual[i][j]) {
+                    *x1 = i; *y1 = j;
+                    *x2 = i; *y2 = k;
+                    return 1;
+                }
+            }
+            // Verifica na mesma coluna (apenas abaixo)
+            for (int k = i + 1; k < g->linhas; k++) {
+                if (g->atual[k][j] == g->atual[i][j]) {
+                    *x1 = i; *y1 = j;
+                    *x2 = k; *y2 = j;
+                    return 1;
+                }
+            }
+        }
+    }
+    // Verifica células '#' adjacentes:
+    // Checamos apenas "acima" e "à esquerda" para evitar repetição.
+    for (int i = 0; i < g->linhas; i++) {
+        for (int j = 0; j < g->colunas; j++) {
+            if (g->atual[i][j] == '#') {
+                if (i > 0 && g->atual[i-1][j] == '#') {
+                    *x1 = i; *y1 = j;
+                    *x2 = i - 1; *y2 = j;
+                    return 1;
+                }
+                if (j > 0 && g->atual[i][j-1] == '#') {
+                    *x1 = i; *y1 = j;
+                    *x2 = i; *y2 = j - 1;
+                    return 1;
+                }
             }
         }
     }
     return 0;
 }
 
-void resolver_jogo(Jogo *jogo) {
-    if (jogo->linhas == 0) {
-        printf("Carregue um tabuleiro primeiro!\n");
-        return;
-    }
+// Backtracking recursivo: tenta resolver os conflitos do tabuleiro.
+// Se conseguir resolver (ou seja, não há conflitos) retorna 1; senão, retorna 0.
+int resolve(Jogo *g) {
+    int x1, y1, x2, y2;
+    
+    // Se não há conflito, o tabuleiro está resolvido.
+    if (!encontra_violacoes(g, &x1, &y1, &x2, &y2))
+        return 1;
+    
+    // Salva os valores originais
+    char cel1 = g->atual[x1][y1];
+    char cel2 = g->atual[x2][y2];
+    
+    // Tenta remover (definindo como '#') a primeira célula em conflito
+    g->atual[x1][y1] = '#';
+    if (!tem_adjacente(g) && resolve(g))
+        return 1;
+    g->atual[x1][y1] = cel1;  // desfaz a alteração
+    
+    // Tenta remover a segunda célula
+    g->atual[x2][y2] = '#';
+    if (!tem_adjacente(g) && resolve(g))
+        return 1;
+    g->atual[x2][y2] = cel2;
+    
+    return 0;
+}
 
-    copiaTabuleiro(jogo);
-    for (int i = 0; i < jogo->linhas; i++) {
-        for (int j = 0; j < jogo->colunas; j++) {
-            if (jogo->original[i][j] != ' ') {
-                jogo->atual[i][j] = maiuscula(jogo->original[i][j]);
-            }
+// Sugere uma dica: qual a célula a remover a seguir.
+// Se encontrar uma dica, retorna 1 e define (*x, *y) com as coordenadas.
+int dar_dica(Jogo *g, int *x, int *y) {
+    int x1, y1, x2, y2;
+    
+    if (!encontra_violacoes(g, &x1, &y1, &x2, &y2))
+        return 0;
+    
+    // Testa a remoção da primeira célula num tabuleiro de cópia
+    Jogo copia = *g;
+    copia.atual[x1][y1] = '#';
+    if (!tem_adjacente(&copia) && resolve(&copia)) {
+        *x = x1; *y = y1;
+        return 1;
+    }
+    
+    // Caso contrário, sugere a segunda célula
+    *x = x2; *y = y2;
+    return 1;
+}
+
+// Função principal que aplica as dicas até que o jogo seja resolvido.
+// Após resolver, converte todas as letras para maiúsculas e exibe o tabuleiro.
+void resolve_jogo(Jogo *g) {
+    int x, y;
+    while (dar_dica(g, &x, &y)) {
+        copiaTabuleiro(g);      // Assume que essa função faz uma cópia do tabuleiro (para histórico ou visual)
+        g->atual[x][y] = '#';     // Remove a célula sugerida pela dica
+    }
+    // Converte todas as células para maiúsculas
+    for (int i = 0; i < g->linhas; i++) {
+        for (int j = 0; j < g->colunas; j++) {
+            g->atual[i][j] = maiuscula(g->atual[i][j]);
         }
     }
-    printf("Jogo resolvido!\n");
+    mostrar(g);  // Exibe o tabuleiro final
 }

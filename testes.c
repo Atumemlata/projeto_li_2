@@ -107,10 +107,10 @@ void test_salvar_jogo() {
 void test_resolver_jogo() {
     Jogo j = {0};
 
-    resolver_jogo(&j);  // sem matriz, não deve crashar
+    resolve_jogo(&j);  // sem matriz, não deve crashar
 
     carregar_matriz(&j, "tabuleiro.txt");
-    resolver_jogo(&j);  // com matriz, também não deve crashar
+    resolve_jogo(&j);  // com matriz, também não deve crashar
 
     limparJogo(&j);
 }
