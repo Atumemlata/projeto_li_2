@@ -157,7 +157,86 @@ void verificarCasa(Jogo *jogo, int x, int y, int visitado[MAX][MAX]) {
     verificarCasa(jogo, x, y-1, visitado);
 }
 
-void verificarRestricoes(Jogo *jogo) {
+int contarViolacoes(Jogo *jogo) {
+    int violacoes = 0;
+
+    // 1) Verificar linhas repetidas
+    for (int i = 0; i < jogo->linhas; i++) {
+        for (int j = 0; j < jogo->colunas; j++) {
+            for (int k = j + 1; k < jogo->colunas; k++) {
+                char c1 = jogo->atual[i][j];
+                char c2 = jogo->atual[i][k];
+                if (c1 == c2 && c1 != '#' && c1 != ' ') {
+                    violacoes++;
+                }
+            }
+        }
+    }
+
+    // 2) Verificar colunas repetidas
+    for (int j = 0; j < jogo->colunas; j++) {
+        for (int i = 0; i < jogo->linhas; i++) {
+            for (int k = i + 1; k < jogo->linhas; k++) {
+                char c1 = jogo->atual[i][j];
+                char c2 = jogo->atual[k][j];
+                if (c1 == c2 && c1 != '#' && c1 != ' ') {
+                    violacoes++;
+                }
+            }
+        }
+    }
+
+    // 3) Verificar desconexão de casas maiúsculas (caso haja pelo menos uma)
+    int visitado[MAX][MAX] = {0};
+    int startX = -1, startY = -1;
+
+    // Encontra a primeira célula maiúscula (se existir)
+    for (int i = 0; i < jogo->linhas && startX < 0; i++) {
+        for (int j = 0; j < jogo->colunas; j++) {
+            if (isupper((unsigned char)jogo->atual[i][j])) {
+                startX = i;
+                startY = j;
+                break;
+            }
+        }
+    }
+
+    if (startX != -1) {
+        // Marca todas as células conectadas via flood-fill
+        verificarCasa(jogo, startX, startY, visitado);
+
+        // Qualquer célula que seja minúscula (letra não riscada) e não visitada => violação
+        for (int i = 0; i < jogo->linhas; i++) {
+            for (int j = 0; j < jogo->colunas; j++) {
+                if (islower((unsigned char)jogo->atual[i][j]) && !visitado[i][j]) {
+                    violacoes++;
+                }
+            }
+        }
+    }
+
+    // 4) Dois '#' consecutivos (horizontais)
+    for (int i = 0; i < jogo->linhas; i++) {
+        for (int j = 0; j < jogo->colunas - 1; j++) {
+            if (jogo->atual[i][j] == '#' && jogo->atual[i][j + 1] == '#') {
+                violacoes++;
+            }
+        }
+    }
+
+    // 5) Dois '#' consecutivos (verticais)
+    for (int j = 0; j < jogo->colunas; j++) {
+        for (int i = 0; i < jogo->linhas - 1; i++) {
+            if (jogo->atual[i][j] == '#' && jogo->atual[i + 1][j] == '#') {
+                violacoes++;
+            }
+        }
+    }
+
+    return violacoes;
+}
+
+int verificarRestricoes(Jogo *jogo) {
     int violacoes = 0;
 
     // Verificar linhas
@@ -216,18 +295,18 @@ void verificarRestricoes(Jogo *jogo) {
         }
     }
 
-    // Verificar '#' consecutivos
+    // Verificar '#' consecutivos (horizontais)
     for (int i = 0; i < jogo->linhas; i++) {
-        for (int j = 0; j < jogo->colunas-1; j++) {
+        for (int j = 0; j < jogo->colunas - 1; j++) {
             if (jogo->atual[i][j] == '#' && jogo->atual[i][j+1] == '#') {
                 violacoes++;
                 printf("Dois '#' consecutivos em (%d,%d)-(%d,%d)\n", i, j, i, j+1);
             }
         }
     }
-
+    // Verificar '#' consecutivos (verticais)
     for (int j = 0; j < jogo->colunas; j++) {
-        for (int i = 0; i < jogo->linhas-1; i++) {
+        for (int i = 0; i < jogo->linhas - 1; i++) {
             if (jogo->atual[i][j] == '#' && jogo->atual[i+1][j] == '#') {
                 violacoes++;
                 printf("Dois '#' consecutivos em (%d,%d)-(%d,%d)\n", i, j, i+1, j);
@@ -235,7 +314,13 @@ void verificarRestricoes(Jogo *jogo) {
         }
     }
 
-    printf(violacoes ? "\nTotal violacoes: %d\n" : "\nTabuleiro valido!\n", violacoes);
+    if (violacoes == 0) {
+        printf("\nTabuleiro valido!\n");
+    } else {
+        printf("\nTotal violacoes: %d\n", violacoes);
+    }
+
+    return violacoes;
 }
 
 //FUNCAO PARA GRAVAR O JOGO(COMANDO g)
@@ -357,11 +442,9 @@ void resolve_jogo(Jogo *g) {
 
     int mudou;
     do {
-        copiaTabuleiro(g);  // Salva o estado antes de qualquer alteração
+        copiaTabuleiro(g);  
         mudou = ajudar(g);
     } while (mudou);
 
-    mostrar(g);
+
 }
-
-
