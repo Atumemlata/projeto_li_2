@@ -18,12 +18,22 @@ int main() {
             break;
 
         switch (comando) {
-            case 'l': // Carregar
-                while (getchar() != '\n'); // Limpa buffer
-                if (carregar_matriz(&jogo, "tabuleiro.txt")) {
-                    mostrar(&jogo);
+            case 'l': { // Carregar com argumento imediato
+                char filename[100];
+                // Lê logo o nome do ficheiro após o 'l'
+                if (scanf("%99s", filename) != 1) {
+                    printf("Erro: espera um nome de ficheiro após 'l'.\n");
+                } else {
+                    if (carregar_matriz(&jogo, filename)) {
+                        mostrar(&jogo);
+                    } else {
+                        printf("Falha ao carregar '%s'.\n", filename);
+                    }
                 }
+                // Limpa o restante da linha (incluindo '\n')
+                while (getchar() != '\n');
                 break;
+            }
 
             case 'b': // Pintar
                 if (scanf("%d %d", &linha, &coluna) == 2) {
@@ -34,7 +44,7 @@ int main() {
                         mostrar(&jogo);
                     }
                 }
-                while (getchar() != '\n'); // Limpa buffer
+                while (getchar() != '\n');
                 break;
 
             case 'r': // Riscar
@@ -63,14 +73,13 @@ int main() {
                 break;
 
             case 'g': { // Gravar
-                while (getchar() != '\n');
-                char filename[100];
-                printf("Nome do arquivo para salvar: ");
-                if (scanf("%99s", filename) != 1) {
+                char filename_save[100];
+                // Lê nome do ficheiro após 'g'
+                if (scanf("%99s", filename_save) != 1) {
                     printf("Erro ao ler o nome do ficheiro.\n");
-                    break;
+                } else {
+                    salvar_jogo(&jogo, filename_save);
                 }
-                salvar_jogo(&jogo, filename);
                 while (getchar() != '\n');
                 break;
             }
@@ -84,7 +93,6 @@ int main() {
                         mostrar(&jogo);
                     } else {
                         printf("Nenhuma dica disponivel.\n");
-                        // Remove o estado salvo já que não houve mudança
                         if (jogo.historico != NULL) {
                             Estado *temp = jogo.historico;
                             jogo.historico = jogo.historico->prox;
@@ -99,20 +107,15 @@ int main() {
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
                 } else {
-                    // Salva o estado inicial uma única vez
                     copiaTabuleiro(&jogo);
-                    
                     int totalMudancas = 0;
-                    // Aplica inferências repetidamente até não haver mais mudanças
                     while (ajudar(&jogo)) {
                         totalMudancas = 1;
                     }
-                    
                     if (totalMudancas) {
                         mostrar(&jogo);
                     } else {
                         printf("Nenhuma dica disponivel.\n");
-                        // Remove o estado salvo já que não houve mudança
                         if (jogo.historico != NULL) {
                             Estado *temp = jogo.historico;
                             jogo.historico = jogo.historico->prox;
@@ -127,14 +130,10 @@ int main() {
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
                 } else {
-                    // Salva o estado atual antes de tentar resolver
                     copiaTabuleiro(&jogo);
-                    
                     if (resolver_completamente(&jogo)) {
-                        // Verifica se está realmente resolvido
                         int totalViol = contarViolacoes(&jogo);
                         int celulasNaoResolvidas = 0;
-                        
                         for (int i = 0; i < jogo.linhas && !celulasNaoResolvidas; i++) {
                             for (int j = 0; j < jogo.colunas; j++) {
                                 if (islower(jogo.atual[i][j])) {
@@ -143,18 +142,15 @@ int main() {
                                 }
                             }
                         }
-
                         if (totalViol == 0 && !celulasNaoResolvidas) {
                             printf("Jogo resolvido!\n");
                             mostrar(&jogo);
                         } else {
                             printf("Impossivel resolver.\n");
-                            // Restaura o estado anterior
                             imprimeTabuleiro(&jogo);
                         }
                     } else {
                         printf("Impossivel resolver.\n");
-                        // Restaura o estado anterior
                         imprimeTabuleiro(&jogo);
                     }
                 }
@@ -168,7 +164,6 @@ int main() {
         }
     }
 
-    // Limpa histórico ao sair
     limparJogo(&jogo);
     return 0;
 }
