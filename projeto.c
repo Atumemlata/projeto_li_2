@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "projeto.h"
 
 int main() {
@@ -74,28 +75,50 @@ int main() {
                 break;
             }
 
-            case 'a': // Dar dica
+            case 'a': // Dar dica (uma inferência)
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
                 } else {
                     copiaTabuleiro(&jogo);
-                    if (!ajudar(&jogo))
-                        printf("Nada mais a inferir.\n");
-                    mostrar(&jogo);
+                    if (ajudar(&jogo)) {
+                        mostrar(&jogo);
+                    } else {
+                        printf("Nenhuma dica disponivel.\n");
+                        // Remove o estado salvo já que não houve mudança
+                        if (jogo.historico != NULL) {
+                            Estado *temp = jogo.historico;
+                            jogo.historico = jogo.historico->prox;
+                            free(temp);
+                        }
+                    }
                 }
                 while (getchar() != '\n');
                 break;
 
-            case 'A': // Dar todas as dicas
+            case 'A': // Dar todas as dicas possíveis
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
                 } else {
-                    while (1) {
-                        copiaTabuleiro(&jogo);
-                        if (!ajudar(&jogo))
-                            break;
+                    // Salva o estado inicial uma única vez
+                    copiaTabuleiro(&jogo);
+                    
+                    int totalMudancas = 0;
+                    // Aplica inferências repetidamente até não haver mais mudanças
+                    while (ajudar(&jogo)) {
+                        totalMudancas = 1;
                     }
-                    mostrar(&jogo);
+                    
+                    if (totalMudancas) {
+                        mostrar(&jogo);
+                    } else {
+                        printf("Nenhuma dica disponivel.\n");
+                        // Remove o estado salvo já que não houve mudança
+                        if (jogo.historico != NULL) {
+                            Estado *temp = jogo.historico;
+                            jogo.historico = jogo.historico->prox;
+                            free(temp);
+                        }
+                    }
                 }
                 while (getchar() != '\n');
                 break;
@@ -103,25 +126,39 @@ int main() {
             case 'R': { // Resolver
                 if (jogo.linhas == 0) {
                     printf("Carregue um tabuleiro primeiro!\n");
-                    if (getchar() != '\n') {} // limpa eventual '\n'
                 } else {
-                    // Limpa o '\n' que havia ficado no buffer
-                    if (getchar() != '\n') {}
+                    // Salva o estado atual antes de tentar resolver
+                    copiaTabuleiro(&jogo);
+                    
+                    if (resolver_completamente(&jogo)) {
+                        // Verifica se está realmente resolvido
+                        int totalViol = contarViolacoes(&jogo);
+                        int celulasNaoResolvidas = 0;
+                        
+                        for (int i = 0; i < jogo.linhas && !celulasNaoResolvidas; i++) {
+                            for (int j = 0; j < jogo.colunas; j++) {
+                                if (islower(jogo.atual[i][j])) {
+                                    celulasNaoResolvidas = 1;
+                                    break;
+                                }
+                            }
+                        }
 
-                    // 1) Aplica todas as inferências (função já salva estados, mas não mostra nada)
-                    resolve_jogo(&jogo);
-
-                    // 2) Conta quantas violações esse tabuleiro final apresenta
-                    int totalViol = contarViolacoes(&jogo);
-
-                    if (totalViol > 0) {
-                        // Só imprime “Impossivel” — não lista cada violação
-                        printf("Impossivel\n");
+                        if (totalViol == 0 && !celulasNaoResolvidas) {
+                            printf("Jogo resolvido!\n");
+                            mostrar(&jogo);
+                        } else {
+                            printf("Impossivel resolver.\n");
+                            // Restaura o estado anterior
+                            imprimeTabuleiro(&jogo);
+                        }
                     } else {
-                        // Se não houver violações, exibe o tabuleiro final resolvido
-                        mostrar(&jogo);
+                        printf("Impossivel resolver.\n");
+                        // Restaura o estado anterior
+                        imprimeTabuleiro(&jogo);
                     }
                 }
+                while (getchar() != '\n');
                 break;
             }
 
