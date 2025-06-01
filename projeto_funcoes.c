@@ -356,7 +356,7 @@ void salvar_jogo(Jogo *jogo, const char *filename) {
 }
 //FUNCOES PARA RESOLVER 
 
-// ————— Funções de apoio ao “ajuda” —————
+// ————— Funções de apoio ao “ajudar” —————
 
 // Deve riscar casa (x,y) se houver um espaço na mesma linha/coluna
 
@@ -426,7 +426,7 @@ static int isolaBrancos(Jogo *j, int x, int y) {
     return desconectado;
 }
 
-// 3) a função de “ajuda” devolve 1 se alterou algo, 0 caso contrário
+// 3) a função de “ajudar” devolve 1 se alterou algo, 0 caso contrário
 int ajudar(Jogo *j) {
     if (j->linhas == 0) return 0;
     
