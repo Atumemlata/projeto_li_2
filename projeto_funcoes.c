@@ -359,8 +359,7 @@ void salvar_jogo(Jogo *jogo, const char *filename) {
 // ————— Funções de apoio ao “ajudar” —————
 
 // Deve riscar casa (x,y) se houver um espaço na mesma linha/coluna
-
-static int precisaRiscar(Jogo *j, int x, int y) {
+int precisaRiscar(Jogo *j, int x, int y) {
     char c = j->atual[x][y];
     if (!islower(c)) return 0;
     
@@ -384,7 +383,7 @@ static int precisaRiscar(Jogo *j, int x, int y) {
 }
 
 // 2) testa se riscar (x,y) isolaria alguma célula branca (maiúscula)
-static int isolaBrancos(Jogo *j, int x, int y) {
+int isolaBrancos(Jogo *j, int x, int y) {
     if (j->atual[x][y] == '#') return 0; // Já está riscada
     
     // Temporariamente risca a posição
@@ -535,7 +534,7 @@ int ajudar(Jogo *j) {
 
 
 // Função para copiar o estado atual do tabuleiro
-static void copiarEstado(Jogo *origem, Jogo *destino) {
+void copiarEstado(Jogo *origem, Jogo *destino) {
     destino->linhas = origem->linhas;
     destino->colunas = origem->colunas;
     
@@ -550,12 +549,12 @@ static void copiarEstado(Jogo *origem, Jogo *destino) {
 }
 
 // Função para verificar se o estado atual é válido (sem violações)
-static int estadoValido(Jogo *jogo) {
+int estadoValido(Jogo *jogo) {
     return contarViolacoes(jogo) == 0;
 }
 
 // Função para verificar se o jogo está completo (sem minúsculas)
-static int jogoCompleto(Jogo *jogo) {
+int jogoCompleto(Jogo *jogo) {
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
             if (islower(jogo->atual[i][j])) {
@@ -567,7 +566,7 @@ static int jogoCompleto(Jogo *jogo) {
 }
 
 // Função para encontrar a próxima célula não resolvida
-static int encontrarProximaCelula(Jogo *jogo, int *x, int *y) {
+int encontrarProximaCelula(Jogo *jogo, int *x, int *y) {
     for (int i = 0; i < jogo->linhas; i++) {
         for (int j = 0; j < jogo->colunas; j++) {
             if (islower(jogo->atual[i][j])) {
@@ -581,7 +580,7 @@ static int encontrarProximaCelula(Jogo *jogo, int *x, int *y) {
 }
 
 // Função melhorada de resolução com backtracking
-static int resolverComBacktracking(Jogo *jogo) {
+int resolverComBacktracking(Jogo *jogo) {
     // Aplica inferências básicas repetidamente até não haver mais mudanças
     int mudancas;
     do {
