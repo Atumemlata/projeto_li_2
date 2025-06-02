@@ -1,0 +1,21 @@
+20 20
+G J P # B I # C # N # S D # M Q # O E K 
+# R M S # H B A G E O # C D I # K # P # 
+I S F # G P # B # T # E L # O D R C N J 
+# F # K L # Q # D H R # O N # S M # B A 
+T D K I # Q M E A # S O G # L # B H R # 
+R # D # O T K # N A # I # M B F C # S Q 
+# M # P R # T O # C B # H S # A # K # I 
+D H J C # N A # I # L B M # S # F R T # 
+# P # T A O # I R S F J # K G M L # Q D 
+E N H # M # L # K # I # Q # C # P S A # 
+# G # O K F S L # B # D P J R T I # H E 
+C Q E F # K # S H R A L # O # J # M I # 
+# E I # T D J R P # G # F L A # H # C S 
+N # R B # E # M # I P K T # J H Q G D # 
+A T # D Q # P # S F # H # G # K # L M R 
+# L S # H R I N # Q K # A E T # J # F # 
+S # Q M # L C # O J N A R # H B D E # G 
+P K # R D # N G # O # C J I F # S # L B 
+# O L N C S D J Q # T P # R # I A B G H 
+M C # H # B # D J P # R S # Q L # F # T 
